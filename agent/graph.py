@@ -1,18 +1,28 @@
 from dotenv import load_dotenv
 import logging
+from pathlib import Path
 from typing import TypedDict, Annotated
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END, StateGraph
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
 from tools.order_tools import lookup_order, check_return_window
 from tools.customer_tools import get_customer_profile
 from tools.escalation_tools import create_escalation_ticket
+from tools.kb_tools import search_knowledge_base
 
 load_dotenv(override=True)
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+SYSTEM_PROMPT_PATH = Path(__file__).parent / "prompts" / "system_prompt.txt"
+system_prompt = SYSTEM_PROMPT_PATH.read_text()
 
 
 class AgentState(TypedDict):
@@ -32,6 +42,7 @@ tools = [
     check_return_window,
     get_customer_profile,
     create_escalation_ticket,
+    search_knowledge_base
 ]
 
 
@@ -44,7 +55,8 @@ def agent_node(state: AgentState) -> AgentState:
     model = ChatOpenAI(model="gpt-5.4-mini").bind_tools(tools)
 
     # Call the model with the message history
-    response = model.invoke(state["messages"])
+    messages = [SystemMessage(content=system_prompt)] + state["messages"]
+    response = model.invoke(messages)
 
     # Track what tools the LLM decided to call (before execution)
     if hasattr(response, "tool_calls") and response.tool_calls:
@@ -54,8 +66,8 @@ def agent_node(state: AgentState) -> AgentState:
                 "args": tool_call["args"]
             })
 
-    logger.debug("LLM response: ", response.content)
-    logger.debug("LLM response toolcall: ", state["tool_calls_made"])
+    logger.debug("LLM response: %s", response.content)
+    logger.debug("LLM response toolcall: %s", state["tool_calls_made"])
 
     # Add the response to messages
     state["messages"].append(response)
@@ -71,21 +83,36 @@ def should_continue(state: AgentState) -> str:
     return END
 
 
+def update_tracking(state: AgentState) -> AgentState:
+    for message in reversed(state["messages"]):
+        if isinstance(message, ToolMessage) and message.name == "search_knowledge_base":
+            results = eval(message.content)
+            for r in results:
+                if r["doc_id"] not in state["retrieved_docs"]:
+                    state["retrieved_docs"].append(r["doc_id"])
+        break
+    return state
+
+
 # Graph flow
 graph_builder = StateGraph(AgentState)
 graph_builder.add_node("agent", agent_node)
 # ToolNode handles execution automatically
 graph_builder.add_node("tools", ToolNode(tools))
+graph_builder.add_node("update_tracking", update_tracking)
+
 
 graph_builder.set_entry_point("agent")
 graph_builder.add_conditional_edges("agent", should_continue, {
                                     "tools": "tools", END: END})
-graph_builder.add_edge("tools", "agent")
+graph_builder.add_edge("tools", "update_tracking")
+graph_builder.add_edge("update_tracking", "agent"
+                       )
 graph = graph_builder.compile()
 
 if __name__ == "__main__":
     initial_state = {
-        "messages": [HumanMessage(content="Can I return my order SN-10001? ordered from those account test@gmail.com")],
+        "messages": [HumanMessage(content="free return shipping loyalty")],
         "retrieved_docs": [],
         "tool_calls_made": [],
         "customer_email": "maria.chen@email.com",
@@ -96,3 +123,4 @@ if __name__ == "__main__":
 
     result = graph.invoke(initial_state)
     logger.debug(f"Tool calls made: {result['tool_calls_made']}")
+    logger.debug(f"retrieved_docs: {result['retrieved_docs']}")
