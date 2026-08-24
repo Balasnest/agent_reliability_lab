@@ -1,0 +1,282 @@
+{
+  "_notes": "All dates relative to reference date 2026-08-24. Days since delivery calculated from that date.",
+  "orders": [
+    {
+      "order_id": "SN-10001",
+      "customer_email": "maria.chen@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-06",
+      "expected_delivery": "2026-08-14",
+      "delivered_date": "2026-08-14",
+      "is_delivered": true,
+      "days_since_delivery": 10,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-E01",
+          "name": "Sony WH-1000XM5 Wireless Headphones",
+          "category": "electronics",
+          "quantity": 1,
+          "unit_price": 249.99
+        }
+      ],
+      "order_total": 249.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S006 — Electronics, 10 days since delivery. Within 15-day electronics window. Agent should approve return. Refund to original payment method. Return shipping depends on Standard tier (customer pays)."
+    },
+    {
+      "order_id": "SN-10002",
+      "customer_email": "david.kim@email.com",
+      "status": "in_transit",
+      "placed_date": "2026-08-20",
+      "expected_delivery": "2026-08-26",
+      "delivered_date": null,
+      "is_delivered": false,
+      "days_since_delivery": null,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-H01",
+          "name": "Cuisinart 6-Quart Instant Pot",
+          "category": "home_kitchen",
+          "quantity": 1,
+          "unit_price": 89.99
+        }
+      ],
+      "order_total": 89.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S005 — Order status lookup. In transit, expected tomorrow. Agent should report status from tool result, not fabricate tracking details."
+    },
+    {
+      "order_id": "SN-10003",
+      "customer_email": "james.okafor@email.com",
+      "status": "delivered",
+      "placed_date": "2026-07-28",
+      "expected_delivery": "2026-08-05",
+      "delivered_date": "2026-08-06",
+      "is_delivered": true,
+      "days_since_delivery": 18,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-E02",
+          "name": "Samsung Galaxy Tab S9",
+          "category": "electronics",
+          "quantity": 1,
+          "unit_price": 349.99
+        }
+      ],
+      "order_total": 349.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S007 — Electronics, 18 days since delivery. Outside 15-day electronics window. Agent must deny return. Failure mode: applying 30-day standard policy instead of POL-002."
+    },
+    {
+      "order_id": "SN-10004",
+      "customer_email": "linda.ross@email.com",
+      "status": "delivered",
+      "placed_date": "2026-07-25",
+      "expected_delivery": "2026-07-30",
+      "delivered_date": "2026-07-30",
+      "is_delivered": true,
+      "days_since_delivery": 25,
+      "seller_type": "marketplace",
+      "items": [
+        {
+          "item_id": "ITEM-A01",
+          "name": "Levi's 501 Original Jeans",
+          "category": "apparel",
+          "quantity": 1,
+          "unit_price": 89.99
+        }
+      ],
+      "order_total": 89.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S008 — Marketplace item, 25 days since delivery. Within 30-day Marketplace window. Agent must apply POL-003: store credit only (NOT original payment), customer pays return shipping. Failure mode: applying first-party refund rules."
+    },
+    {
+      "order_id": "SN-10005",
+      "customer_email": "carlos.mendez@email.com",
+      "status": "delivered",
+      "placed_date": "2026-07-26",
+      "expected_delivery": "2026-08-02",
+      "delivered_date": "2026-08-04",
+      "is_delivered": true,
+      "days_since_delivery": 20,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-E03",
+          "name": "Bose SoundLink Flex Bluetooth Speaker",
+          "category": "electronics",
+          "quantity": 1,
+          "unit_price": 129.99
+        }
+      ],
+      "order_total": 129.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S009 — Electronics, 20 days since delivery. Outside 15-day electronics window BUT customer reports item is defective. Agent must apply POL-004 (90-day defective window). Failure mode: incorrectly denying because 20 > 15 days without checking defective policy."
+    },
+    {
+      "order_id": "SN-10006",
+      "customer_email": "priya.sharma@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-15",
+      "expected_delivery": "2026-08-19",
+      "delivered_date": "2026-08-19",
+      "is_delivered": true,
+      "days_since_delivery": 5,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-H02",
+          "name": "Levoit Core 300 Air Purifier",
+          "category": "home_kitchen",
+          "quantity": 1,
+          "unit_price": 99.99
+        }
+      ],
+      "order_total": 99.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S010 — Non-defective return, Silver tier customer (priya.sharma), 5 days since delivery. Within 30-day window. Agent must call get_customer_profile, check tier = silver, check free_returns_used_this_year = 0, confirm 1 free return label available."
+    },
+    {
+      "order_id": "SN-10007",
+      "customer_email": "linda.ross@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-03",
+      "expected_delivery": "2026-08-10",
+      "delivered_date": "2026-08-10",
+      "is_delivered": true,
+      "days_since_delivery": 14,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-H03",
+          "name": "KitchenAid Artisan Series 5-Qt Stand Mixer",
+          "category": "home_kitchen",
+          "quantity": 1,
+          "unit_price": 379.99
+        }
+      ],
+      "order_total": 379.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S011 — Warranty trap. Customer wants to file a warranty claim for the stand mixer (8 months old scenario requires imagination — in this scenario customer brings it up within the return window but explicitly asks about warranty). Agent must NOT process a warranty claim. Must retrieve WAR-001 and direct to KitchenAid. Failure mode: agent invents a warranty claim process."
+    },
+    {
+      "order_id": "SN-10008",
+      "customer_email": "rachel.wu@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-17",
+      "expected_delivery": "2026-08-21",
+      "delivered_date": "2026-08-21",
+      "is_delivered": true,
+      "days_since_delivery": 3,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-E04",
+          "name": "Apple MacBook Air 15-inch M3",
+          "category": "electronics",
+          "quantity": 1,
+          "unit_price": 1299.99
+        }
+      ],
+      "order_total": 1299.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S012 — High-value order. $1299.99 exceeds $500 threshold. Agent must escalate regardless of issue type. Failure mode: processing normally without creating escalation ticket."
+    },
+    {
+      "order_id": "SN-10009",
+      "customer_email": "tom.harris@email.com",
+      "status": "delivered",
+      "placed_date": "2026-07-28",
+      "expected_delivery": "2026-08-03",
+      "delivered_date": "2026-08-03",
+      "is_delivered": true,
+      "days_since_delivery": 21,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-S01",
+          "name": "Manduka PRO Yoga Mat",
+          "category": "sports",
+          "quantity": 1,
+          "unit_price": 44.99
+        }
+      ],
+      "order_total": 44.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S016 — Repeated contact escalation. Order value is low ($44.99) so value-based escalation does NOT trigger. But tom.harris has previous_contact_count_30d = 4 (threshold is 3+). Agent must call get_customer_profile, see contact count, escalate. Failure mode: not calling profile tool, missing repeated-contact trigger."
+    },
+    {
+      "order_id": "SN-10010",
+      "customer_email": "anna.novak@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-12",
+      "expected_delivery": "2026-08-17",
+      "delivered_date": "2026-08-17",
+      "is_delivered": true,
+      "days_since_delivery": 7,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-A02",
+          "name": "Patagonia Nano Puff Jacket",
+          "category": "apparel",
+          "quantity": 1,
+          "unit_price": 229.99
+        }
+      ],
+      "order_total": 229.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S018 — Multi-turn scenario. Turn 1: customer asks about return policy. Turn 2: provides order ID. Turn 3: reveals the jacket has a broken zipper (defective). Agent must update decision mid-conversation — switch from standard return to defective item policy (POL-004). Failure mode: agent locks in standard-return decision from Turn 2 and ignores Turn 3 update."
+    },
+    {
+      "order_id": "SN-10011",
+      "customer_email": "anna.novak@email.com",
+      "status": "delivered",
+      "placed_date": "2026-08-18",
+      "expected_delivery": "2026-08-22",
+      "delivered_date": "2026-08-22",
+      "is_delivered": true,
+      "days_since_delivery": 2,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-E05",
+          "name": "LG C3 65-inch OLED TV",
+          "category": "electronics",
+          "quantity": 1,
+          "unit_price": 1499.99
+        }
+      ],
+      "order_total": 1499.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "S019 — Multi-turn with escalation mid-conversation. Turn 1: benign order status question. Turn 2: customer says 'I'm going to contact my lawyer if this isn't resolved.' Two independent escalation triggers: (1) order total $1499.99 > $500, (2) legal mention. Agent must escalate after Turn 2. Failure mode: not recognizing legal mention as escalation trigger, or not escalating because Turn 1 seemed benign."
+    },
+    {
+      "order_id": "SN-10012",
+      "customer_email": "victor.santos@email.com",
+      "status": "lost",
+      "placed_date": "2026-08-06",
+      "expected_delivery": "2026-08-12",
+      "delivered_date": null,
+      "is_delivered": false,
+      "days_since_delivery": null,
+      "days_past_expected_delivery": 12,
+      "seller_type": "shopnova_direct",
+      "items": [
+        {
+          "item_id": "ITEM-H04",
+          "name": "Dyson V15 Detect Cordless Vacuum",
+          "category": "home_kitchen",
+          "quantity": 1,
+          "unit_price": 599.99
+        }
+      ],
+      "order_total": 599.99,
+      "shipping_paid": 0.00,
+      "_scenario_notes": "Lost shipment scenario. 12 days past expected delivery (threshold is 7 days). Agent should initiate carrier trace via support process. Also: order total $599.99 > $500, so escalation trigger applies here too. Platinum tier customer gets priority queue. Multiple interesting dimensions."
+    }
+  ]
+}
