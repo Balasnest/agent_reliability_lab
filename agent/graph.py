@@ -24,13 +24,21 @@ class AgentState(TypedDict):
     escalation_reason: str
 
 
+# Bind all tools to the model
+tools = [
+    lookup_order,
+    check_return_window,
+    get_customer_profile,
+    create_escalation_ticket,
+]
+
+
 def agent_node(state: AgentState) -> AgentState:
     """Call the LLM with tools bound. The LLM decides what to do next.
     retrieve docs, call a tool or respond to the customer.
     """
-    # Bind all tools to the model
-    tools = [lookup_order, check_return_window,
-             get_customer_profile, create_escalation_ticket]
+
+    # LLM with tools
     model = ChatOpenAI(model="gpt-5.4-mini").bind_tools(tools)
 
     # Call the model with the message history
@@ -40,7 +48,7 @@ def agent_node(state: AgentState) -> AgentState:
     if hasattr(response, "tool_calls") and response.tool_calls:
         for tool_call in response.tool_calls:
             state["tool_calls_made"].append({
-                "tool": tool_call["type"],
+                "tool": tool_call["name"],
                 "args": tool_call["args"]
             })
 
@@ -61,20 +69,11 @@ def should_continue(state: AgentState) -> str:
     return END
 
 
-# ToolNode handles execution automatically
-tools = [
-    lookup_order,
-    check_return_window,
-    get_customer_profile,
-    create_escalation_ticket,
-]
-
-tool_node = ToolNode(tools)
-
 # Graph flow
 graph_builder = StateGraph(AgentState)
 graph_builder.add_node("agent", agent_node)
-graph_builder.add_node("tools", tool_node)
+# ToolNode handles execution automatically
+graph_builder.add_node("tools", ToolNode(tools))
 
 graph_builder.set_entry_point("agent")
 graph_builder.add_conditional_edges("agent", should_continue, {
