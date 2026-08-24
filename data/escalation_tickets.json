@@ -1,0 +1,22 @@
+[
+  {
+    "ticket_id": "TKT-00001",
+    "customer_email": "rachel.wu@email.com",
+    "order_id": "SN-10008",
+    "issue_type": "high_value_order",
+    "priority": "high",
+    "summary": "Customer ordered $1299.99 MacBook Air, requesting return guidance for high-value item.",
+    "created_at": "2026-08-24T13:46:38.908013",
+    "status": "open"
+  },
+  {
+    "ticket_id": "TKT-00002",
+    "customer_email": "tom.harris@email.com",
+    "order_id": "SN-10009",
+    "issue_type": "repeated_contact",
+    "priority": "medium",
+    "summary": "Customer has contacted support 4 times in 30 days about the same yoga mat return issue.",
+    "created_at": "2026-08-24T13:46:38.908835",
+    "status": "open"
+  }
+]
