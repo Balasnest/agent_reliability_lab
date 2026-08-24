@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import logging
 from typing import TypedDict, Annotated
 from langchain_openai import ChatOpenAI
 from langgraph.graph import START, END, StateGraph
@@ -11,6 +12,7 @@ from tools.customer_tools import get_customer_profile
 from tools.escalation_tools import create_escalation_ticket
 
 load_dotenv(override=True)
+logger = logging.getLogger(__name__)
 
 
 class AgentState(TypedDict):
@@ -52,8 +54,8 @@ def agent_node(state: AgentState) -> AgentState:
                 "args": tool_call["args"]
             })
 
-    print("LLM response: ", response.content)
-    print("LLM response toolcall: ", state["tool_calls_made"])
+    logger.debug("LLM response: ", response.content)
+    logger.debug("LLM response toolcall: ", state["tool_calls_made"])
 
     # Add the response to messages
     state["messages"].append(response)
@@ -93,4 +95,4 @@ if __name__ == "__main__":
     }
 
     result = graph.invoke(initial_state)
-    print(f"Tool calls made: {result['tool_calls_made']}")
+    logger.debug(f"Tool calls made: {result['tool_calls_made']}")
