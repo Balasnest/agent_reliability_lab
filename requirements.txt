@@ -1,0 +1,15 @@
+langgraph
+langchain
+langchain-openai
+langchain-community
+openai
+psycopg2-binary
+pgvector
+sqlalchemy
+fastapi
+uvicorn
+streamlit
+dspy-ai
+pytest
+python-dotenv
+pydantic
