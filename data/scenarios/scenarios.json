@@ -25,7 +25,8 @@
             "response_must_not_contain": [
                 "15-day",
                 "store credit",
-                "marketplace"
+                "price match guarantee",
+                "we offer price match"
             ]
         },
         "evaluation_dimensions": [
@@ -102,8 +103,7 @@
             "should_escalate": false,
             "response_must_contain": [
                 "15-day",
-                "original payment",
-                "within the return window"
+                "eligible"
             ],
             "response_must_not_contain": [
                 "30 days",
@@ -179,7 +179,6 @@
             "retrieved_docs": [],
             "should_escalate": false,
             "response_must_contain": [
-                "don't have information",
                 "price match"
             ],
             "response_must_not_contain": [

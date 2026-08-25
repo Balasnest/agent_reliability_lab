@@ -9,11 +9,11 @@
       ],
       "retrieved_docs": [
         "POL-001",
-        "POL-004",
-        "POL-002"
+        "POL-002",
+        "POL-004"
       ],
       "escalated": false,
-      "final_response": "Hi \u2014 for most items, ShopNova allows returns within **30 days of the confirmed delivery date**.\n\nA couple of important exceptions from the policy:\n- **Electronics sold directly by ShopNova:** **15 days**\n- **Defective items:** **90 days**\n- **Marketplace seller items:** different policy applies\n\nIf you want, send me your **order ID** and I can check the exact return window for your item."
+      "final_response": "Maria, ShopNova\u2019s standard return window is **30 days from the confirmed delivery date**.\n\nA few exceptions apply:\n- **Electronics sold directly by ShopNova:** **15 days**\n- **Defective items:** up to **90 days** from delivery\n- **Marketplace seller items:** different rules apply\n\nIf you want, send me the **order number** and I can check the exact return window for your item."
     },
     "expected": {
       "tool_calls": [
@@ -39,7 +39,7 @@
       "hallucination"
     ],
     "error": null,
-    "ran_at": "2026-08-25T09:02:12.642013"
+    "ran_at": "2026-08-25T10:51:53.894647"
   },
   {
     "scenario_id": "S012",
@@ -47,11 +47,18 @@
     "difficulty": "medium",
     "actual": {
       "tool_calls": [
-        "lookup_order"
+        "lookup_order",
+        "get_customer_profile",
+        "search_knowledge_base",
+        "check_return_window"
       ],
-      "retrieved_docs": [],
+      "retrieved_docs": [
+        "POL-001",
+        "POL-004",
+        "POL-002"
+      ],
       "escalated": false,
-      "final_response": "I couldn\u2019t verify order **SN-10008** with the information I have.\n\nPlease send me:\n- the **email address used on the order**\n- confirmation that the order number is **SN-10008**\n\nOnce I can verify the order, I can check the return options for your **MacBook Air**."
+      "final_response": "Rachel, your MacBook Air is eligible for return.\n\nWhy:\n- Order SN-10008 was delivered 3 days ago.\n- ShopNova direct electronics have a 15-day return window.\n- Your item is still within that window.\n\nImportant:\n- For electronics, return eligibility depends on the item being either unopened/original factory-sealed or confirmed defective.\n- If the MacBook Air has been opened and is functioning normally, it may not qualify for a change-of-mind return once opened.\n\nWhat I need from you:\n- Let me know whether it\u2019s unopened or defective, and I can guide you to the next step."
     },
     "expected": {
       "tool_calls": [
@@ -78,7 +85,7 @@
       "decision_correctness"
     ],
     "error": null,
-    "ran_at": "2026-08-25T09:02:14.759170"
+    "ran_at": "2026-08-25T10:51:57.972116"
   },
   {
     "scenario_id": "S006",
@@ -86,11 +93,18 @@
     "difficulty": "medium",
     "actual": {
       "tool_calls": [
-        "lookup_order"
+        "lookup_order",
+        "get_customer_profile",
+        "check_return_window",
+        "search_knowledge_base"
       ],
-      "retrieved_docs": [],
+      "retrieved_docs": [
+        "POL-004",
+        "POL-001",
+        "POL-002"
+      ],
       "escalated": false,
-      "final_response": "I can help with the return, but I need the email address used on the order to verify it.\n\nPlease send:\n- the email on the order\n- whether the headphones have been delivered yet\n\nIf you want, I can also check the return window once I verify the order."
+      "final_response": "Hi Maria \u2014 your Sony headphones from order **SN-10001** are **eligible for return**.\n\nWhy:\n- The order was **delivered 10 days ago**\n- Electronics sold directly by ShopNova have a **15-day return window**\n- Your item is **still within that window**\n\nWhat applies:\n- The headphones must be **original factory-sealed/unopened** to return as a non-defective change-of-mind return\n- If they\u2019re **defective**, they can still be returned under the defective-item policy\n- Refunds go to the **original payment method**\n- For **non-defective electronics**, return shipping depends on your loyalty tier\n\nIf you want, I can help you with the next step. If the headphones were opened, please tell me whether they\u2019re defective so I can guide you correctly."
     },
     "expected": {
       "tool_calls": [
@@ -118,7 +132,7 @@
       "decision_correctness"
     ],
     "error": null,
-    "ran_at": "2026-08-25T09:02:17.023973"
+    "ran_at": "2026-08-25T10:52:03.728849"
   },
   {
     "scenario_id": "S007",
@@ -126,11 +140,17 @@
     "difficulty": "medium",
     "actual": {
       "tool_calls": [
-        "lookup_order"
+        "lookup_order",
+        "get_customer_profile",
+        "search_knowledge_base"
       ],
-      "retrieved_docs": [],
+      "retrieved_docs": [
+        "POL-001",
+        "POL-003",
+        "POL-004"
+      ],
       "escalated": false,
-      "final_response": "I can help with the return, but I couldn\u2019t verify order **SN-10003** because I need the **email address used for the order** to look it up.\n\nPlease send:\n- the **email on the order**, and\n- if you can, the **reason for return**.\n\nOnce I can confirm the order, I\u2019ll check whether the Samsung Galaxy Tab is eligible for return."
+      "final_response": "Hi James \u2014 your Samsung Galaxy Tab S9 from order SN-10003 is **eligible for a return**.\n\nWhat I found:\n- Order is **delivered**\n- Delivered **18 days ago**\n- Item is an **electronics** product sold by **ShopNova Direct**\n- The return window from the knowledge base says **electronics sold directly by ShopNova have a 15-day return window**\n\nSo, based on the policy retrieved, this item is **outside the standard return window**.\n\nPossible exception:\n- If the tablet is **defective**, it may still be eligible under the defective-item policy, which allows returns within **90 days** of delivery and includes a **free prepaid return label**.\n\nIf the tablet is **not defective**, the available policy indicates the return can\u2019t be accepted under standard terms.\n\nIf you want, I can help you check whether it qualifies as a defective-item return."
     },
     "expected": {
       "tool_calls": [
@@ -158,7 +178,7 @@
       "decision_correctness"
     ],
     "error": null,
-    "ran_at": "2026-08-25T09:02:19.122867"
+    "ran_at": "2026-08-25T10:52:07.467165"
   },
   {
     "scenario_id": "S013",
@@ -170,11 +190,11 @@
       ],
       "retrieved_docs": [
         "POL-003",
-        "BIL-002",
-        "POL-004"
+        "POL-004",
+        "WAR-001"
       ],
       "escalated": false,
-      "final_response": "I couldn\u2019t find any ShopNova policy covering price matching.\n\nBased on the knowledge base available to me, I can only confirm return, refund, shipping, and defect policies\u2014not competitor price-match guarantees. If you\u2019d like, I can help check whether a specific item has a current promotion or compare ShopNova options, but I can\u2019t promise a price match from the available policy info."
+      "final_response": "I couldn\u2019t find any ShopNova policy about price matching in the knowledge base.\n\nIf you\u2019d like, I can help with returns, refunds, or warranty-related questions instead."
     },
     "expected": {
       "tool_calls": [
@@ -201,6 +221,6 @@
       "tool_selection"
     ],
     "error": null,
-    "ran_at": "2026-08-25T09:02:22.124082"
+    "ran_at": "2026-08-25T10:52:10.276988"
   }
 ]
