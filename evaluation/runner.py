@@ -67,10 +67,15 @@ def run_scenario(scenario: dict) -> dict:
 
     actual_tool_names = [c["tool"] for c in result.get("tool_calls_made", [])]
 
+    customer_query = next(
+        (t["content"] for t in scenario["conversation"] if t["role"] == "user"), ""
+    )
+
     return {
         "scenario_id": scenario["id"],
         "scenario_name": scenario["name"],
         "difficulty": scenario["difficulty"],
+        "customer_query": customer_query,
         "actual": {
             "tool_calls": actual_tool_names,
             "retrieved_docs": result.get("retrieved_docs", []),

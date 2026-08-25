@@ -6,20 +6,38 @@ import json
 from pathlib import Path
 
 from evaluators import tool_selection, retrieval, escalation, response as response_eval
+from evaluators import decision_correctness
 
 EVALUATOR_MAP = {
-    "tool_selection":    tool_selection.evaluate,
-    "retrieval_accuracy": retrieval.evaluate,
-    "escalation_accuracy": escalation.evaluate,
-    "decision_correctness": response_eval.evaluate,
-    "hallucination":     response_eval.evaluate,
+    "tool_selection":       tool_selection.evaluate,
+    "retrieval_accuracy":   retrieval.evaluate,
+    "escalation_accuracy":  escalation.evaluate,
+    "decision_correctness": decision_correctness.evaluate,
+    "hallucination":        response_eval.evaluate,
 }
 
 RESULTS_PATH = Path(__file__).parent / "run_results.json"
+SCENARIOS_PATH = Path(__file__).parent.parent / "data" / "scenarios" / "scenarios.json"
 
 
-def evaluate_result(result: dict) -> dict:
+def _load_query_lookup() -> dict[str, str]:
+    """Build {scenario_id: customer_query} from scenarios file."""
+    with open(SCENARIOS_PATH) as f:
+        scenarios = json.load(f)
+    return {
+        s["id"]: next(
+            (t["content"] for t in s["conversation"] if t["role"] == "user"), ""
+        )
+        for s in scenarios
+    }
+
+
+def evaluate_result(result: dict, query_lookup: dict[str, str] | None = None) -> dict:
     """Run all applicable evaluators for a single scenario result."""
+    # Backfill customer_query for results captured before runner carried it
+    if "customer_query" not in result and query_lookup:
+        result = {**result, "customer_query": query_lookup.get(result["scenario_id"], "")}
+
     dimensions = result.get("evaluation_dimensions", [])
     evaluations = []
     seen = set()
@@ -28,7 +46,6 @@ def evaluate_result(result: dict) -> dict:
         evaluator = EVALUATOR_MAP.get(dimension)
         if not evaluator:
             continue
-        # response_eval covers both decision_correctness and hallucination — run once
         key = evaluator.__module__
         if key in seen:
             continue
@@ -84,7 +101,8 @@ if __name__ == "__main__":
     with open(RESULTS_PATH) as f:
         results = json.load(f)
 
-    evaluated = [evaluate_result(r) for r in results]
+    query_lookup = _load_query_lookup()
+    evaluated = [evaluate_result(r, query_lookup) for r in results]
 
     output_path = Path(__file__).parent / "evaluation_report.json"
     with open(output_path, "w") as f:

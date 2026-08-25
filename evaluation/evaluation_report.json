@@ -49,7 +49,7 @@
     "scenario_name": "High-value order \u2014 escalation required",
     "difficulty": "medium",
     "overall_passed": false,
-    "overall_score": 0.333,
+    "overall_score": 0.167,
     "evaluations": [
       {
         "dimension": "tool_selection",
@@ -78,14 +78,9 @@
       {
         "dimension": "decision_correctness",
         "passed": false,
-        "score": 0.5,
-        "missing_phrases": [
-          "escalated",
-          "team",
-          "follow"
-        ],
-        "forbidden_phrases_found": [],
-        "reason": "Missing expected phrases: ['escalated', 'team', 'follow']"
+        "score": 0.0,
+        "reason": "The agent failed to escalate the issue to a human agent as required for a high-value order return.",
+        "judge": "gpt-4o-mini"
       }
     ]
   },
@@ -93,8 +88,8 @@
     "scenario_id": "S006",
     "scenario_name": "Electronics return within window",
     "difficulty": "medium",
-    "overall_passed": false,
-    "overall_score": 0.933,
+    "overall_passed": true,
+    "overall_score": 1.0,
     "evaluations": [
       {
         "dimension": "tool_selection",
@@ -129,13 +124,10 @@
       },
       {
         "dimension": "decision_correctness",
-        "passed": false,
-        "score": 0.8,
-        "missing_phrases": [
-          "within the return window"
-        ],
-        "forbidden_phrases_found": [],
-        "reason": "Missing expected phrases: ['within the return window']"
+        "passed": true,
+        "score": 1.0,
+        "reason": "The agent correctly identified the return eligibility within the 15-day window and provided accurate information regarding the return process.",
+        "judge": "gpt-4o-mini"
       }
     ]
   },
@@ -144,7 +136,7 @@
     "scenario_name": "Electronics return outside 15-day window",
     "difficulty": "medium",
     "overall_passed": false,
-    "overall_score": 0.489,
+    "overall_score": 0.556,
     "evaluations": [
       {
         "dimension": "tool_selection",
@@ -178,13 +170,10 @@
       },
       {
         "dimension": "decision_correctness",
-        "passed": false,
-        "score": 0.8,
-        "missing_phrases": [
-          "not eligible"
-        ],
-        "forbidden_phrases_found": [],
-        "reason": "Missing expected phrases: ['not eligible']"
+        "passed": true,
+        "score": 1.0,
+        "reason": "The agent correctly identified that the return is outside the 15-day window and provided accurate information about the defective-item policy.",
+        "judge": "gpt-4o-mini"
       }
     ]
   },
