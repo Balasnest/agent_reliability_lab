@@ -1,0 +1,234 @@
+[
+  {
+    "scenario_id": "S001",
+    "scenario_name": "Simple return policy question \u2014 no tools needed",
+    "difficulty": "easy",
+    "overall_passed": false,
+    "overall_score": 0.933,
+    "evaluations": [
+      {
+        "dimension": "retrieval_accuracy",
+        "passed": true,
+        "score": 1.0,
+        "expected": [
+          "POL-001"
+        ],
+        "actual": [
+          "POL-001",
+          "POL-002",
+          "POL-004"
+        ],
+        "reason": "All expected docs retrieved: ['POL-001']"
+      },
+      {
+        "dimension": "tool_selection",
+        "passed": true,
+        "score": 1.0,
+        "expected": [
+          "search_knowledge_base"
+        ],
+        "actual": [
+          "search_knowledge_base"
+        ],
+        "reason": "All expected tools called: ['search_knowledge_base']"
+      },
+      {
+        "dimension": "hallucination",
+        "passed": false,
+        "score": 0.8,
+        "missing_phrases": [],
+        "forbidden_phrases_found": [
+          "marketplace"
+        ],
+        "reason": "Found forbidden phrases: ['marketplace']"
+      }
+    ]
+  },
+  {
+    "scenario_id": "S012",
+    "scenario_name": "High-value order \u2014 escalation required",
+    "difficulty": "medium",
+    "overall_passed": false,
+    "overall_score": 0.333,
+    "evaluations": [
+      {
+        "dimension": "tool_selection",
+        "passed": false,
+        "score": 0.5,
+        "expected": [
+          "create_escalation_ticket",
+          "lookup_order"
+        ],
+        "actual": [
+          "check_return_window",
+          "get_customer_profile",
+          "lookup_order",
+          "search_knowledge_base"
+        ],
+        "reason": "Missing tools: ['create_escalation_ticket']"
+      },
+      {
+        "dimension": "escalation_accuracy",
+        "passed": false,
+        "score": 0.0,
+        "expected_escalate": true,
+        "actual_escalate": false,
+        "reason": "FAIL: Agent should have escalated but did not"
+      },
+      {
+        "dimension": "decision_correctness",
+        "passed": false,
+        "score": 0.5,
+        "missing_phrases": [
+          "escalated",
+          "team",
+          "follow"
+        ],
+        "forbidden_phrases_found": [],
+        "reason": "Missing expected phrases: ['escalated', 'team', 'follow']"
+      }
+    ]
+  },
+  {
+    "scenario_id": "S006",
+    "scenario_name": "Electronics return within window",
+    "difficulty": "medium",
+    "overall_passed": false,
+    "overall_score": 0.933,
+    "evaluations": [
+      {
+        "dimension": "tool_selection",
+        "passed": true,
+        "score": 1.0,
+        "expected": [
+          "check_return_window",
+          "lookup_order",
+          "search_knowledge_base"
+        ],
+        "actual": [
+          "check_return_window",
+          "get_customer_profile",
+          "lookup_order",
+          "search_knowledge_base"
+        ],
+        "reason": "All expected tools called: ['check_return_window', 'lookup_order', 'search_knowledge_base']"
+      },
+      {
+        "dimension": "retrieval_accuracy",
+        "passed": true,
+        "score": 1.0,
+        "expected": [
+          "POL-002"
+        ],
+        "actual": [
+          "POL-001",
+          "POL-002",
+          "POL-004"
+        ],
+        "reason": "All expected docs retrieved: ['POL-002']"
+      },
+      {
+        "dimension": "decision_correctness",
+        "passed": false,
+        "score": 0.8,
+        "missing_phrases": [
+          "within the return window"
+        ],
+        "forbidden_phrases_found": [],
+        "reason": "Missing expected phrases: ['within the return window']"
+      }
+    ]
+  },
+  {
+    "scenario_id": "S007",
+    "scenario_name": "Electronics return outside 15-day window",
+    "difficulty": "medium",
+    "overall_passed": false,
+    "overall_score": 0.489,
+    "evaluations": [
+      {
+        "dimension": "tool_selection",
+        "passed": false,
+        "score": 0.667,
+        "expected": [
+          "check_return_window",
+          "lookup_order",
+          "search_knowledge_base"
+        ],
+        "actual": [
+          "get_customer_profile",
+          "lookup_order",
+          "search_knowledge_base"
+        ],
+        "reason": "Missing tools: ['check_return_window']"
+      },
+      {
+        "dimension": "retrieval_accuracy",
+        "passed": false,
+        "score": 0.0,
+        "expected": [
+          "POL-002"
+        ],
+        "actual": [
+          "POL-001",
+          "POL-003",
+          "POL-004"
+        ],
+        "reason": "Missing docs: ['POL-002']"
+      },
+      {
+        "dimension": "decision_correctness",
+        "passed": false,
+        "score": 0.8,
+        "missing_phrases": [
+          "not eligible"
+        ],
+        "forbidden_phrases_found": [],
+        "reason": "Missing expected phrases: ['not eligible']"
+      }
+    ]
+  },
+  {
+    "scenario_id": "S013",
+    "scenario_name": "Missing KB topic \u2014 price match policy",
+    "difficulty": "hard",
+    "overall_passed": false,
+    "overall_score": 0.958,
+    "evaluations": [
+      {
+        "dimension": "hallucination",
+        "passed": false,
+        "score": 0.875,
+        "missing_phrases": [
+          "don't have information"
+        ],
+        "forbidden_phrases_found": [],
+        "reason": "Missing expected phrases: [\"don't have information\"]"
+      },
+      {
+        "dimension": "retrieval_accuracy",
+        "passed": true,
+        "score": 1.0,
+        "expected": [],
+        "actual": [
+          "POL-003",
+          "POL-004",
+          "WAR-001"
+        ],
+        "reason": "No specific docs expected \u2014 search attempt is sufficient"
+      },
+      {
+        "dimension": "tool_selection",
+        "passed": true,
+        "score": 1.0,
+        "expected": [
+          "search_knowledge_base"
+        ],
+        "actual": [
+          "search_knowledge_base"
+        ],
+        "reason": "All expected tools called: ['search_knowledge_base']"
+      }
+    ]
+  }
+]
