@@ -1,0 +1,204 @@
+[
+    {
+        "id": "S001",
+        "name": "Simple return policy question — no tools needed",
+        "difficulty": "easy",
+        "customer_email": "maria.chen@email.com",
+        "conversation": [
+            {
+                "role": "user",
+                "content": "How long do I have to return something?"
+            }
+        ],
+        "expected": {
+            "tool_calls": [
+                "search_knowledge_base"
+            ],
+            "retrieved_docs": [
+                "POL-001"
+            ],
+            "should_escalate": false,
+            "response_must_contain": [
+                "30 days",
+                "delivery"
+            ],
+            "response_must_not_contain": [
+                "15-day",
+                "store credit",
+                "marketplace"
+            ]
+        },
+        "evaluation_dimensions": [
+            "retrieval_accuracy",
+            "tool_selection",
+            "hallucination"
+        ],
+        "failure_modes_tested": [
+            "unnecessary_tool_call",
+            "wrong_doc_retrieved",
+            "hallucinated_window"
+        ]
+    },
+    {
+        "id": "S012",
+        "name": "High-value order — escalation required",
+        "difficulty": "medium",
+        "customer_email": "rachel.wu@email.com",
+        "conversation": [
+            {
+                "role": "user",
+                "content": "I want to return my MacBook Air from order SN-10008"
+            }
+        ],
+        "expected": {
+            "tool_calls": [
+                "lookup_order",
+                "create_escalation_ticket"
+            ],
+            "retrieved_docs": [],
+            "should_escalate": true,
+            "escalation_priority": "high",
+            "response_must_contain": [
+                "escalated",
+                "team",
+                "follow"
+            ],
+            "response_must_not_contain": [
+                "approved",
+                "refund to your",
+                "return label"
+            ]
+        },
+        "evaluation_dimensions": [
+            "tool_selection",
+            "escalation_accuracy",
+            "decision_correctness"
+        ],
+        "failure_modes_tested": [
+            "missing_escalation",
+            "processed_without_escalating"
+        ]
+    },
+    {
+        "id": "S006",
+        "name": "Electronics return within window",
+        "difficulty": "medium",
+        "customer_email": "maria.chen@email.com",
+        "conversation": [
+            {
+                "role": "user",
+                "content": "I want to return my Sony headphones from order SN-10001"
+            }
+        ],
+        "expected": {
+            "tool_calls": [
+                "lookup_order",
+                "check_return_window",
+                "search_knowledge_base"
+            ],
+            "retrieved_docs": [
+                "POL-002"
+            ],
+            "should_escalate": false,
+            "response_must_contain": [
+                "15-day",
+                "original payment",
+                "within the return window"
+            ],
+            "response_must_not_contain": [
+                "30 days",
+                "not eligible"
+            ]
+        },
+        "evaluation_dimensions": [
+            "tool_selection",
+            "retrieval_accuracy",
+            "decision_correctness"
+        ],
+        "failure_modes_tested": [
+            "wrong_policy_applied",
+            "missing_tool_call"
+        ]
+    },
+    {
+        "id": "S007",
+        "name": "Electronics return outside 15-day window",
+        "difficulty": "medium",
+        "customer_email": "james.okafor@email.com",
+        "conversation": [
+            {
+                "role": "user",
+                "content": "I want to return my Samsung Galaxy Tab from order SN-10003"
+            }
+        ],
+        "expected": {
+            "tool_calls": [
+                "lookup_order",
+                "check_return_window",
+                "search_knowledge_base"
+            ],
+            "retrieved_docs": [
+                "POL-002"
+            ],
+            "should_escalate": false,
+            "response_must_contain": [
+                "15-day",
+                "not eligible"
+            ],
+            "response_must_not_contain": [
+                "approved",
+                "30-day",
+                "you can return"
+            ]
+        },
+        "evaluation_dimensions": [
+            "tool_selection",
+            "retrieval_accuracy",
+            "decision_correctness"
+        ],
+        "failure_modes_tested": [
+            "30_day_rule_applied_to_electronics",
+            "return_approved_when_should_be_denied"
+        ]
+    },
+    {
+        "id": "S013",
+        "name": "Missing KB topic — price match policy",
+        "difficulty": "hard",
+        "customer_email": "maria.chen@email.com",
+        "conversation": [
+            {
+                "role": "user",
+                "content": "Do you offer price matching if I find the same product cheaper elsewhere?"
+            }
+        ],
+        "expected": {
+            "tool_calls": [
+                "search_knowledge_base"
+            ],
+            "retrieved_docs": [],
+            "should_escalate": false,
+            "response_must_contain": [
+                "don't have information",
+                "price match"
+            ],
+            "response_must_not_contain": [
+                "we do offer price matching",
+                "we do not offer price matching",
+                "110%",
+                "30 days",
+                "submit a request",
+                "price match guarantee"
+            ]
+        },
+        "evaluation_dimensions": [
+            "hallucination",
+            "retrieval_accuracy",
+            "tool_selection"
+        ],
+        "failure_modes_tested": [
+            "hallucinated_policy",
+            "confident_wrong_answer"
+        ]
+    }
+]
