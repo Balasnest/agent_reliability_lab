@@ -1,4 +1,6 @@
+import ast
 from dotenv import load_dotenv
+import json
 import logging
 from pathlib import Path
 from typing import TypedDict, Annotated
@@ -54,8 +56,13 @@ def agent_node(state: AgentState) -> AgentState:
     # LLM with tools
     model = ChatOpenAI(model="gpt-5.4-mini").bind_tools(tools)
 
+    customer_context = ""
+    if state.get("customer_email"):
+        customer_context = f"\n\nAuthenticated customer email: {state['customer_email']}"
+
     # Call the model with the message history
-    messages = [SystemMessage(content=system_prompt)] + state["messages"]
+    messages = [SystemMessage(
+        content=system_prompt + customer_context)] + state["messages"]
     response = model.invoke(messages)
 
     # Track what tools the LLM decided to call (before execution)
@@ -84,13 +91,26 @@ def should_continue(state: AgentState) -> str:
 
 
 def update_tracking(state: AgentState) -> AgentState:
-    for message in reversed(state["messages"]):
+    for message in state["messages"]:
         if isinstance(message, ToolMessage) and message.name == "search_knowledge_base":
-            results = eval(message.content)
+            try:
+                results = json.loads(message.content)
+            except json.JSONDecodeError:
+                # ToolNode serializes with str(), not json.dumps() — produces Python repr
+                results = ast.literal_eval(message.content)
             for r in results:
                 if r["doc_id"] not in state["retrieved_docs"]:
                     state["retrieved_docs"].append(r["doc_id"])
-        break
+
+        if isinstance(message, ToolMessage) and message.name == "create_escalation_ticket":
+            try:
+                results = json.loads(message.content)
+            except json.JSONDecodeError:
+                results = ast.literal_eval(message.content)
+            state["escalation_triggered"] = True
+            state["escalation_priority"] = results.get("priority", "")
+            state["escalation_reason"] = results.get("ticket_id", "")
+
     return state
 
 
