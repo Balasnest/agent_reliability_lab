@@ -1,218 +1,128 @@
-"use client";
+import Link from "next/link";
+import { CheckCircle, Flag, MessageCircle, Send } from "@/components/icons";
 
-import { useEffect, useRef, useState } from "react";
-import TopBar from "@/components/TopBar";
-import ScenarioRail from "@/components/ScenarioRail";
-import ChatPanel from "@/components/ChatPanel";
-import AgentTracePanel from "@/components/AgentTracePanel";
-import type { Message } from "@/components/MessageBubble";
-import {
-  getCustomers,
-  streamChat,
-  type ChatTrace,
-  type Customer,
-  type Evaluation,
-  type ScenarioDetail,
-  type ToolCallTrace,
-} from "@/lib/api";
-
-const DEFAULT_CUSTOMER: Customer = {
-  id: "CUST-001",
-  name: "Maria Chen",
-  email: "maria.chen@email.com",
-  loyalty_tier: "standard",
-};
-
-const initialMessages: Message[] = [
+const steps = [
   {
-    role: "customer",
-    text: "Hi, I'd like to return the headphones from order SN-10001 — is that still possible?",
-    time: "9:41 AM",
+    icon: MessageCircle,
+    iconBg: "bg-accent-soft",
+    iconColor: "text-accent-deep",
+    title: "Replay real conversations",
+    body: "Pick a scenario from the library or chat live as any customer — every turn streams through the real agent, not a mock.",
+  },
+  {
+    icon: Flag,
+    iconBg: "bg-sage-bg",
+    iconColor: "text-sage-ink",
+    title: "Watch the trace live",
+    body: "Tool calls, knowledge-base retrievals, and escalations surface as they happen, streamed straight from the agent graph.",
+  },
+  {
+    icon: CheckCircle,
+    iconBg: "bg-rust-bg",
+    iconColor: "text-rust-ink",
+    title: "Score it automatically",
+    body: "Five evaluators grade tool selection, retrieval accuracy, escalation judgment, decision correctness, and response quality against a scenario library.",
   },
 ];
 
-const EMPTY_TRACE: ChatTrace = {
-  tool_calls: [],
-  retrieved_docs: [],
-  escalated: false,
-  escalation_priority: null,
-  escalation_ticket_id: null,
-  escalation_reason: null,
-};
-
-function newSessionId() {
-  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function nowLabel() {
-  return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
 export default function Home() {
-  // Generated client-side only (useEffect below) — Date.now()/Math.random() in a
-  // useState initializer would differ between the SSR pass and hydration and
-  // trigger a hydration mismatch.
-  const [sessionId, setSessionId] = useState("");
-  const [customer, setCustomer] = useState(DEFAULT_CUSTOMER);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [trace, setTrace] = useState<ChatTrace | null>(null);
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [sending, setSending] = useState(false);
-  const [customersByEmail, setCustomersByEmail] = useState<Record<string, Customer>>({});
-  const [customersList, setCustomersList] = useState<Customer[]>([]);
-
-  // Mirrors sessionId so an in-flight request can tell, once it resolves,
-  // whether the user has since switched sessions (e.g. picked a new scenario
-  // mid-reply) — a stale reply must not be appended to a newer conversation.
-  const sessionIdRef = useRef(sessionId);
-  useEffect(() => {
-    sessionIdRef.current = sessionId;
-  }, [sessionId]);
-
-  useEffect(() => {
-    setSessionId(newSessionId());
-  }, []);
-
-  useEffect(() => {
-    getCustomers()
-      .then((list) => {
-        const byEmail: Record<string, Customer> = {};
-        for (const c of list) byEmail[c.email.toLowerCase()] = c;
-        setCustomersByEmail(byEmail);
-        setCustomersList(list);
-        const match = byEmail[DEFAULT_CUSTOMER.email.toLowerCase()];
-        if (match) setCustomer(match);
-      })
-      .catch(() => {});
-  }, []);
-
-  function customerFor(email: string): Customer {
-    return (
-      customersByEmail[email.toLowerCase()] ?? {
-        id: email,
-        name: email,
-        email,
-        loyalty_tier: "—",
-      }
-    );
-  }
-
-  /** Streams one customer turn end-to-end: appends the customer + a growing
-   * agent bubble, updates the trace panel live as tool calls come in, and
-   * finalizes with the authoritative reply/trace/harness-evaluation once the
-   * turn completes. Shared by manual sends and scenario-triggered opens so
-   * both get the same real-time behavior. */
-  async function sendTurn(
-    text: string,
-    forSessionId: string,
-    customerEmail: string,
-    scenarioId?: string
-  ) {
-    setMessages((m) => [
-      ...m,
-      { role: "customer", text, time: nowLabel() },
-      { role: "agent", text: "", time: nowLabel() },
-    ]);
-    setTrace(null);
-    setEvaluation(null);
-    setSending(true);
-
-    const liveToolCalls: ToolCallTrace[] = [];
-    const isCurrent = () => sessionIdRef.current === forSessionId;
-
-    function updateLastAgentMessage(updater: (prev: string) => string) {
-      setMessages((m) => {
-        const next = [...m];
-        const last = next[next.length - 1];
-        if (last?.role === "agent") next[next.length - 1] = { ...last, text: updater(last.text) };
-        return next;
-      });
-    }
-
-    try {
-      await streamChat(
-        { session_id: forSessionId, customer_email: customerEmail, message: text, scenario_id: scenarioId },
-        {
-          onToken: (content) => {
-            if (!isCurrent()) return;
-            updateLastAgentMessage((prev) => prev + content);
-          },
-          onToolCall: (call) => {
-            if (!isCurrent()) return;
-            liveToolCalls.push(call);
-            setTrace((t) => ({ ...(t ?? EMPTY_TRACE), tool_calls: [...liveToolCalls] }));
-          },
-          onDone: ({ reply, trace: finalTrace }) => {
-            if (!isCurrent()) return;
-            updateLastAgentMessage(() => reply);
-            setTrace(finalTrace);
-          },
-          onEvaluation: (result) => {
-            if (!isCurrent()) return;
-            setEvaluation(result);
-          },
-          onError: (message) => {
-            if (!isCurrent()) return;
-            updateLastAgentMessage((prev) => prev || `(couldn't reach the agent — ${message})`);
-          },
-        }
-      );
-    } catch {
-      if (isCurrent()) {
-        updateLastAgentMessage((prev) => prev || "(couldn't reach the API — is it running on :8000?)");
-      }
-    } finally {
-      if (isCurrent()) setSending(false);
-    }
-  }
-
-  function switchCustomer(next: Customer) {
-    if (next.email.toLowerCase() === customer.email.toLowerCase()) return;
-    setSessionId(newSessionId());
-    setCustomer(next);
-    setMessages([]);
-    setTrace(null);
-    setEvaluation(null);
-  }
-
-  async function loadScenario(scenario: ScenarioDetail) {
-    const opening = scenario.conversation[0]?.content ?? "";
-    const freshSessionId = newSessionId();
-
-    setSessionId(freshSessionId);
-    setCustomer(customerFor(scenario.customer_email));
-    setTrace(null);
-    setEvaluation(null);
-    setMessages([]);
-
-    if (!opening) return;
-    await sendTurn(opening, freshSessionId, scenario.customer_email, scenario.id);
-  }
-
-  async function handleSend(text: string) {
-    await sendTurn(text, sessionId, customer.email);
-  }
-
   return (
-    <div className="h-full flex flex-col bg-bg text-ink overflow-hidden">
-      <TopBar
-        customer={customer}
-        customers={customersList}
-        onSwitchCustomer={switchCustomer}
-        switchDisabled={sending}
-      />
-      <ScenarioRail onSelectScenario={loadScenario} disabled={sending} />
-      <div className="flex-1 flex min-h-0">
-        <ChatPanel
-          sessionId={sessionId}
-          customerEmail={customer.email}
-          messages={messages}
-          onSend={handleSend}
-          sending={sending || !sessionId}
-          trace={trace}
-        />
-        <AgentTracePanel trace={trace} evaluation={evaluation} sending={sending} />
-      </div>
+    <div className="min-h-full flex flex-col bg-bg text-ink">
+      {/* Nav */}
+      <header className="flex-shrink-0 flex items-center justify-between px-6 sm:px-16 h-20 bg-surface border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[9px] bg-accent flex items-center justify-center shrink-0">
+            <span className="font-serif text-lg font-medium text-white">R</span>
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="font-serif text-base sm:text-xl font-medium whitespace-nowrap">Agent Reliability Lab</span>
+            <span className="hidden sm:block text-[10.5px] font-bold tracking-wider uppercase text-muted">
+              Reliability Console
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="hidden sm:flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sage" />
+            <span className="text-xs font-semibold text-muted">Live demo running</span>
+          </div>
+          <Link
+            href="/console"
+            className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-accent text-white text-xs sm:text-[13px] font-bold whitespace-nowrap hover:bg-accent-deep transition-colors"
+          >
+            Explore the console
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="flex-shrink-0 px-6 sm:px-16 pt-20 sm:pt-28 pb-20 flex flex-col items-start gap-6 max-w-3xl">
+        <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-accent-deep">
+          Agent Reliability Lab
+        </span>
+        <h1 className="font-serif text-[40px] sm:text-[52px] leading-[1.1] font-medium tracking-tight">
+          See every decision your support agent makes — before your customers do.
+        </h1>
+        <p className="text-[16px] sm:text-[17px] leading-relaxed text-muted max-w-xl">
+          A reliability console for LLM support agents. Replay live conversations turn by turn, watch tool
+          calls and retrievals as they happen, and score every response against a scenario library with
+          five automated evaluators.
+        </p>
+        <div className="flex flex-wrap items-center gap-6 mt-1">
+          <Link
+            href="/console"
+            className="flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-accent text-white hover:bg-accent-deep transition-colors"
+          >
+            <span className="text-[14.5px] font-bold">Explore the console</span>
+            <Send className="w-4 h-4" />
+          </Link>
+          <Link
+            href="/architecture"
+            className="text-[13.5px] font-semibold text-muted hover:text-ink underline underline-offset-4 transition-colors"
+          >
+            See how it&rsquo;s built &rarr;
+          </Link>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-faint">
+          <span>Live demo agent:</span>
+          <span className="font-bold text-ink">ShopNova Support</span>
+          <span>— a fictional e-commerce brand</span>
+        </div>
+      </section>
+
+      {/* How a review works */}
+      <section className="flex-1 px-6 sm:px-16 pb-20 sm:pb-24 flex flex-col gap-8">
+        <div className="h-px bg-border" />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted">
+            How a review works
+          </span>
+          <h2 className="font-serif text-2xl sm:text-[26px] font-medium">Three steps, one running agent</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {steps.map((step) => (
+            <div
+              key={step.title}
+              className="flex flex-col gap-4 p-7 bg-surface border border-border rounded-[14px]"
+            >
+              <div className={`w-11 h-11 rounded-[11px] ${step.iconBg} flex items-center justify-center`}>
+                <step.icon className={`w-[21px] h-[21px] ${step.iconColor}`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <h3 className="text-[17px] font-semibold">{step.title}</h3>
+                <p className="text-[13.5px] leading-relaxed text-muted">{step.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="flex-shrink-0 flex items-center justify-between px-6 sm:px-16 py-5 border-t border-border">
+        <span className="text-xs text-faint">Agent Reliability Lab — reviewer console for LLM support agents</span>
+        <span className="hidden sm:inline text-xs text-faint">FastAPI · LangGraph · Postgres</span>
+      </footer>
     </div>
   );
 }

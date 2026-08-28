@@ -13,8 +13,8 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ShopNova Support Console",
-  description: "Reviewer console for the ShopNova customer support agent",
+  title: "Agent Reliability Lab",
+  description: "A reliability console for LLM support agents — live chat review and scenario-based evaluation",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
