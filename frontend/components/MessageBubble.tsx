@@ -1,3 +1,6 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 export type Message = {
   role: "customer" | "agent";
   text: string;
@@ -26,8 +29,19 @@ export default function MessageBubble({ role, text, time }: Message) {
           ShopNova Agent
         </span>
       </div>
-      <div className="max-w-[560px] bg-accent-soft rounded-tl-[18px] rounded-tr-[18px] rounded-br-[18px] rounded-bl-[4px] px-[18px] py-[14px] text-sm leading-relaxed">
-        {text}
+      <div className="markdown-body max-w-[560px] bg-accent-soft rounded-tl-[18px] rounded-tr-[18px] rounded-br-[18px] rounded-bl-[4px] px-[18px] py-[14px] text-sm leading-relaxed">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            table: ({ children }) => (
+              <div className="table-scroll">
+                <table>{children}</table>
+              </div>
+            ),
+          }}
+        >
+          {text}
+        </ReactMarkdown>
       </div>
       <span className="text-[11px] text-faint pl-1">{time}</span>
     </div>
