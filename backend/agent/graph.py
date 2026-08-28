@@ -60,10 +60,15 @@ def agent_node(state: AgentState) -> AgentState:
     if state.get("customer_email"):
         customer_context = f"\n\nAuthenticated customer email: {state['customer_email']}"
 
-    # Call the model with the message history
+    # Call the model with the message history. Streamed (not .invoke()) so
+    # that callers using astream_events() see token-by-token on_chat_model_stream
+    # events; .invoke()/.stream() callers (evaluation runner, CLI) see no
+    # behavior change since the chunks are reassembled into the same response.
     messages = [SystemMessage(
         content=system_prompt + customer_context)] + state["messages"]
-    response = model.invoke(messages)
+    response = None
+    for chunk in model.stream(messages):
+        response = chunk if response is None else response + chunk
 
     # Track what tools the LLM decided to call (before execution)
     if hasattr(response, "tool_calls") and response.tool_calls:
