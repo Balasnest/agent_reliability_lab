@@ -1,17 +1,9 @@
-import json
+import sys
 from pathlib import Path
 from langchain_core.tools import tool
 
-FIXTURES_DIR = Path(__file__).parent.parent.parent / "data" / "fixtures"
-
-
-def _load_customers() -> list[dict]:
-    with open(FIXTURES_DIR / "customers.json") as f:
-        return json.load(f)["customers"]
-
-
-def _strip_internal(customer: dict) -> dict:
-    return {k: v for k, v in customer.items() if not k.startswith("_")}
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from db import dict_connection, to_jsonable  # noqa: E402
 
 
 @tool
@@ -21,15 +13,17 @@ def get_customer_profile(customer_email: str) -> dict:
     rules or checking whether the repeated-contact escalation threshold has been
     reached.
     """
-    customers = _load_customers()
-
-    customer = next(
-        (c for c in customers if c["email"].lower() == customer_email.lower()), None)
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT * FROM customers WHERE lower(email) = lower(%s);",
+            (customer_email,),
+        )
+        customer = cur.fetchone()
 
     if customer is None:
         return {"error": "customer_not_found", "email": customer_email}
 
-    return _strip_internal(customer)
+    return to_jsonable(dict(customer))
 
 
 if __name__ == "__main__":

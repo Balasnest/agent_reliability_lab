@@ -1,9 +1,10 @@
-import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from langchain_core.tools import tool
 
-ESCALATION_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from db import connection  # noqa: E402
 
 ESCALATION_TIME = {
     "urgent": 2,
@@ -13,20 +14,10 @@ ESCALATION_TIME = {
 }
 
 
-def _load_escalation_tickets() -> list[dict]:
-    ticket_file = ESCALATION_DATA_DIR / "escalation_tickets.json"
-    if not ticket_file.exists():
-        return []
-    with open(ticket_file) as f:
-        content = f.read().strip()
-        if not content:
-            return []
-        return json.loads(content)
-
-
-def _save_escalation_tickets(tickets: list[dict]) -> None:
-    with open(ESCALATION_DATA_DIR / "escalation_tickets.json", "w") as f:
-        json.dump(tickets, f, indent=2)
+def _next_ticket_id(cur) -> str:
+    cur.execute("SELECT COUNT(*) FROM escalation_tickets;")
+    (count,) = cur.fetchone()
+    return f"TKT-{count + 1:05d}"
 
 
 @tool
@@ -38,24 +29,20 @@ def create_escalation_ticket(
     they've contacted support 3+ times about the same issue, or they request
     to speak with a supervisor. Returns a ticket ID and estimated response time."""
 
-    tickets = _load_escalation_tickets()
-    ticket_id = f"TKT-{len(tickets) + 1:05d}"
     priority_lower = priority.lower()
     estimated_hours = ESCALATION_TIME.get(priority_lower, 24)
 
-    ticket = {
-        "ticket_id": ticket_id,
-        "customer_email": customer_email,
-        "order_id": order_id,
-        "issue_type": issue_type,
-        "priority": priority_lower,
-        "summary": summary,
-        "created_at": datetime.now().isoformat(),
-        "status": "open",
-    }
-
-    tickets.append(ticket)
-    _save_escalation_tickets(tickets)
+    with connection() as conn, conn.cursor() as cur:
+        ticket_id = _next_ticket_id(cur)
+        cur.execute(
+            """
+            INSERT INTO escalation_tickets (
+                ticket_id, customer_email, order_id, issue_type, priority, summary, created_at, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'open');
+            """,
+            (ticket_id, customer_email, order_id, issue_type, priority_lower, summary, datetime.now()),
+        )
+        conn.commit()
 
     return {
         "ticket_id": ticket_id,
@@ -86,8 +73,10 @@ if __name__ == "__main__":
     })
     print(result2)
 
-    print("\n--- verify tickets were written to file ---")
-    tickets = _load_escalation_tickets()
-    print(f"Total tickets in file: {len(tickets)}")
-    for ticket in tickets:
-        print(f"  {ticket['ticket_id']}: {ticket['priority']} - {ticket['customer_email']}")
+    print("\n--- verify tickets were written to the database ---")
+    with connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT ticket_id, priority, customer_email FROM escalation_tickets ORDER BY created_at;")
+        rows = cur.fetchall()
+    print(f"Total tickets in db: {len(rows)}")
+    for ticket_id, priority, email in rows:
+        print(f"  {ticket_id}: {priority} - {email}")

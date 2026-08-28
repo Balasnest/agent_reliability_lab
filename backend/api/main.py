@@ -1,45 +1,26 @@
-from fastapi import FastAPI
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
+
+# graph.py uses bare `from tools...` imports, so backend/agent must be on the path.
+AGENT_DIR = Path(__file__).parent.parent / "agent"
+sys.path.insert(0, str(AGENT_DIR))
+
+from graph import graph as agent_graph  # noqa: E402
+from db import dict_connection, to_jsonable  # noqa: E402
 
 app = FastAPI(title="ShopNova Support API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-DUMMY_CUSTOMERS = [
-    {"id": "CUST-001", "name": "Maria Chen", "email": "maria.chen@email.com", "loyalty_tier": "standard"},
-    {"id": "CUST-003", "name": "Priya Sharma", "email": "priya.sharma@email.com", "loyalty_tier": "silver"},
-    {"id": "CUST-005", "name": "David Kim", "email": "david.kim@email.com", "loyalty_tier": "gold"},
-]
-
-DUMMY_SCENARIOS = [
-    {"id": "S001", "name": "Return policy question", "difficulty": "easy"},
-    {"id": "S006", "name": "Electronics return, in window", "difficulty": "medium"},
-    {"id": "S007", "name": "Return outside window", "difficulty": "medium"},
-    {"id": "S012", "name": "High-value escalation", "difficulty": "medium"},
-    {"id": "S013", "name": "Price match (no KB match)", "difficulty": "hard"},
-]
-
-DUMMY_KB_DOCUMENTS = [
-    {"id": "POL-001", "title": "Standard Return Policy", "category": "Returns", "blurb": "30 days from delivery, most items"},
-    {"id": "POL-002", "title": "Electronics Return Window", "category": "Returns", "blurb": "15 days — TVs, laptops, phones"},
-    {"id": "POL-003", "title": "Marketplace Seller Returns", "category": "Returns", "blurb": "Third-party terms differ"},
-    {"id": "POL-004", "title": "Damaged & Defective Items", "category": "Returns", "blurb": "Arrived broken or DOA"},
-    {"id": "SHP-001", "title": "Standard Shipping", "category": "Shipping", "blurb": "3-5 business days; free at Gold+"},
-    {"id": "SHP-002", "title": "Expedited Shipping", "category": "Shipping", "blurb": "Two-day and overnight options"},
-    {"id": "SHP-003", "title": "Lost, Delayed & Damaged Shipments", "category": "Shipping", "blurb": "Carrier issue resolution"},
-    {"id": "BIL-001", "title": "Refund Processing Timeline", "category": "Billing", "blurb": "How long refunds take to post"},
-    {"id": "BIL-002", "title": "Billing Disputes & Chargebacks", "category": "Billing", "blurb": "Before contacting the bank"},
-    {"id": "LOY-001", "title": "ShopNova Rewards Tiers", "category": "Loyalty", "blurb": "Standard, Silver, Gold benefits"},
-    {"id": "ESC-001", "title": "Escalation Criteria", "category": "Escalation", "blurb": "When to open a supervisor ticket"},
-    {"id": "ACC-001", "title": "Account Security", "category": "Account", "blurb": "Password & account protection"},
-    {"id": "WAR-001", "title": "Manufacturer Warranty", "category": "Warranty", "blurb": "Coverage beyond return window"},
-]
 
 
 class ChatRequest(BaseModel):
@@ -48,8 +29,39 @@ class ChatRequest(BaseModel):
     message: str
 
 
+class ToolCallTrace(BaseModel):
+    tool: str
+    args: dict
+
+
+class ChatTrace(BaseModel):
+    tool_calls: list[ToolCallTrace]
+    retrieved_docs: list[dict]
+    escalated: bool
+    escalation_priority: str | None = None
+    escalation_ticket_id: str | None = None
+
+
 class ChatResponse(BaseModel):
     reply: str
+    trace: ChatTrace
+
+
+def _new_session_state(customer_email: str) -> dict:
+    return {
+        "messages": [],
+        "retrieved_docs": [],
+        "tool_calls_made": [],
+        "customer_email": customer_email,
+        "escalation_triggered": False,
+        "escalation_priority": "",
+        "escalation_reason": "",
+    }
+
+
+# In-memory per-session agent state. Fine for local/dev use; a restart drops
+# in-flight conversations.
+SESSIONS: dict[str, dict] = {}
 
 
 @app.get("/api/health")
@@ -59,21 +71,72 @@ def health():
 
 @app.get("/api/customers")
 def list_customers():
-    return DUMMY_CUSTOMERS
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT customer_id AS id, name, email, loyalty_tier FROM customers ORDER BY customer_id;"
+        )
+        return [to_jsonable(dict(row)) for row in cur.fetchall()]
 
 
 @app.get("/api/scenarios")
 def list_scenarios():
-    return DUMMY_SCENARIOS
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, name, difficulty FROM scenarios ORDER BY id;")
+        return [to_jsonable(dict(row)) for row in cur.fetchall()]
+
+
+@app.get("/api/scenarios/{scenario_id}")
+def get_scenario(scenario_id: str):
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT * FROM scenarios WHERE id = %s;", (scenario_id,))
+        scenario = cur.fetchone()
+    if scenario is None:
+        raise HTTPException(status_code=404, detail=f"scenario '{scenario_id}' not found")
+    return to_jsonable(dict(scenario))
 
 
 @app.get("/api/kb/documents")
 def list_kb_documents():
-    return DUMMY_KB_DOCUMENTS
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT doc_id AS id, title, category, blurb FROM kb_documents ORDER BY doc_id;")
+        return [to_jsonable(dict(row)) for row in cur.fetchall()]
+
+
+def _kb_titles(doc_ids: list[str]) -> list[dict]:
+    if not doc_ids:
+        return []
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT doc_id AS id, title FROM kb_documents WHERE doc_id = ANY(%s);",
+            (doc_ids,),
+        )
+        by_id = {row["id"]: row["title"] for row in cur.fetchall()}
+    return [{"id": d, "title": by_id.get(d, d)} for d in doc_ids]
 
 
 @app.post("/api/chat")
 def chat(req: ChatRequest) -> ChatResponse:
-    return ChatResponse(
-        reply=f"(dummy reply) Got your message — the real agent isn't wired up yet, {req.customer_email}."
+    state = SESSIONS.setdefault(req.session_id, _new_session_state(req.customer_email))
+    state["customer_email"] = req.customer_email
+    state["messages"].append(HumanMessage(content=req.message))
+
+    tool_calls_before = len(state["tool_calls_made"])
+    docs_before = len(state["retrieved_docs"])
+    was_escalated = state["escalation_triggered"]
+
+    result = agent_graph.invoke(state)
+    SESSIONS[req.session_id] = result
+
+    turn_tool_calls = result["tool_calls_made"][tool_calls_before:]
+    turn_docs = result["retrieved_docs"][docs_before:]
+    escalated_this_turn = result["escalation_triggered"] and not was_escalated
+
+    trace = ChatTrace(
+        tool_calls=[ToolCallTrace(tool=c["tool"], args=c["args"]) for c in turn_tool_calls],
+        retrieved_docs=_kb_titles(turn_docs),
+        escalated=escalated_this_turn,
+        escalation_priority=result["escalation_priority"] if escalated_this_turn else None,
+        escalation_ticket_id=result["escalation_reason"] if escalated_this_turn else None,
     )
+
+    return ChatResponse(reply=result["messages"][-1].content, trace=trace)

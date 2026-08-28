@@ -1,17 +1,25 @@
-import json
+import sys
 from pathlib import Path
 from langchain_core.tools import tool
 
-FIXTURES_DIR = Path(__file__).parent.parent.parent / "data" / "fixtures"
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from db import dict_connection, to_jsonable  # noqa: E402
 
 
-def _load_orders() -> list[dict]:
-    with open(FIXTURES_DIR / "orders.json") as f:
-        return json.load(f)["orders"]
+def _load_order(order_id: str) -> dict | None:
+    with dict_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT * FROM orders WHERE order_id = %s;", (order_id,))
+        order = cur.fetchone()
+        if order is None:
+            return None
+        order = dict(order)
 
-
-def _strip_internal(order: dict) -> dict:
-    return {k: v for k, v in order.items() if not k.startswith("_")}
+        cur.execute(
+            "SELECT item_id, name, category, quantity, unit_price FROM order_items WHERE order_id = %s;",
+            (order_id,),
+        )
+        order["items"] = [dict(item) for item in cur.fetchall()]
+        return to_jsonable(order)
 
 
 RETURN_WINDOW_BY_CATEGORY = {
@@ -27,9 +35,7 @@ def lookup_order(order_id: str, customer_email: str) -> dict:
     order status, items, delivery date, seller type, or order total.
     Returns order details or an error key if the order is not found or the
     email does not match."""
-    orders = _load_orders()
-
-    order = next((o for o in orders if o["order_id"] == order_id), None)
+    order = _load_order(order_id)
 
     if order is None:
         return {"error": "order_not_found", "order_id": order_id}
@@ -38,7 +44,7 @@ def lookup_order(order_id: str, customer_email: str) -> dict:
         # Do not reveal the order exists — treat it the same as not found
         return {"error": "order_not_found", "order_id": order_id}
 
-    return _strip_internal(order)
+    return order
 
 
 @tool
@@ -50,9 +56,7 @@ def check_return_window(order_id: str,
     delivery, and the applicable policy ID. Does NOT account for defective
     items, seller type, or loyalty tier — the agent must reason about those
     separately after receiving this result."""
-    orders = _load_orders()
-
-    order = next((o for o in orders if o["order_id"] == order_id), None)
+    order = _load_order(order_id)
 
     if order is None:
         return {"error": "order_not_found", "order_id": order_id}
