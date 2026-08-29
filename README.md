@@ -37,9 +37,9 @@ for scoring it at scale.
                                             ▼
                                   Infra — EC2 host
                                   Docker Compose:
-                                   ✅ pgvector
-                                   🔜 frontend  (migrating soon)
-                                   🔜 backend   (migrating soon)
+                                     pgvector
+                                     frontend  
+                                     backend   
 ```
 
 **Evaluation harness** (offline, not behind nginx): `scenarios.json` →
